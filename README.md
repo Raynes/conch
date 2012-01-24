@@ -158,6 +158,12 @@ feeding to a process. They are `stream-to` and `feed-from`. These
 functions are what the utility functions are built off of, and you can
 probably use them to stream to and feed from your own special places.
 
+### Encodings
+
+All of conch's streaming and feeding functions (including the lower
+level ones) can take an `:enc` key that specifies the encoding. This
+will be passed as the `:encoding` key to `clojure.java.io/copy`.
+
 ## License
 
 Copyright (C) 2012 Anthony Grimes
