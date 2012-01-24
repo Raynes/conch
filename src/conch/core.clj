@@ -1,4 +1,5 @@
 (ns conch.core
+  (:refer-clojure :exclude [flush])
   (:require [clojure.java.io :as io]))
 
 (defn env-strings
@@ -24,7 +25,7 @@
                        (when-let [dir (:dir args)]
                          (io/file dir)))]
     {:out (.getInputStream process)
-     :in (.getOutputStream process)
+     :in  (.getOutputStream process)
      :err (.getErrorStream process)
      :process process}))
 
@@ -35,24 +36,20 @@
   [process from to & {:keys [enc] :or {enc "UTF-8"}}]
   (io/copy (io/reader (process from)) to :encoding enc))
 
-(defn feed-to
+(defn feed-from
   "Feed to a process's input stream with optional :enc encoding."
-  [process from & {:keys [enc] :or {end "UTF-8"}}]
+  [process from & {:keys [enc] :or {enc "UTF-8"}}]
   (io/copy from (io/writer (:in process)) :encoding enc))
 
-(defmulti feed (constantly nil))
-
-(defmulti consume (fn [process from to & args] to))
-
-(defmethod consume :string [process from to & args]
-  (with-open [writer (java.io.StringWriter.)] 
+(defn stream-to-string [process from & args]
+  (with-open [writer (java.io.StringWriter.)]
     (apply stream-to process from writer args)
     (str writer)))
 
-(defmethod consume :*out* [process from to & args]
+(defn stream-to-out [process from & args]
   (apply stream-to process from *out* args))
 
-(defn stream [process from to & args]
-  (if (= to :in)
-    (apply feed process from args)
-    (apply consume process from to args)))
+(defn feed-from-string [process s & args]
+  (binding [*out* (io/writer (:in process))]
+    (println s)))
+
