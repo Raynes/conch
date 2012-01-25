@@ -41,8 +41,8 @@ keys `:out`, `:err`, `:in`, and `:proc`.
 Conch is more flexible than `clojure.java.shell` because you have direct
 access to all of the streams and the process object itself.
 
-So, now we have a cat process. This is a unix tool. On my macbook, if I
-run `cat` with no arguments, it echos whatever I type in. This makes it
+So, now we have a cat process. This is a unix tool. If you
+run `cat` with no arguments, it echos whatever you type in. This makes it
 perfect for testing input and output.
 
 Conch defines a few utility functions for streaming output and feeding
