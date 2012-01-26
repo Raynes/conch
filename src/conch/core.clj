@@ -37,6 +37,9 @@
     (.close std-stream))
   (.destroy (:process process)))
 
+;; .waitFor returns the exit code. This makes this function useful for
+;; both getting an exit code and stopping the thread until a process
+;; terminates.
 (defn exit-code
   "Waits for the process to terminate (blocking the thread) and returns
   the exit code."
