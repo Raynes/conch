@@ -53,17 +53,20 @@
 
 (defn stream-to
   "Stream :out or :err from a process to an input stream.
-  If :enc option is specified, stream with that encoding. The
-  default encoding is UTF-8."
-  [process from to & {:keys [enc] :or {enc "UTF-8"}}]
-  (io/copy (io/reader (process from)) to :encoding enc))
+  Options passed are fed to clojure.java.io/copy. They are :encoding to 
+  set the encoding and :buffer-size to set the size of the buffer. 
+  :encoding defaults to UTF-8 and :buffer-size to 1024."
+  [process from to & args]
+  (apply io/copy (process from) to args))
 
 (defn feed-from
-  "Feed to a process's input stream with optional :enc encoding. if
-  :flush isn't specified as false, flushes the output stream after
-  writing."
-  [process from & {:keys [enc flush] :or {enc "UTF-8", flush true}}]
-  (io/copy from (:in process) :encoding enc)
+  "Feed to a process's input stream with optional. Options passed are
+  fed to clojure.java.io/copy. They are :encoding to set the encoding
+  and :buffer-size to set the size of the buffer. :encoding defaults to
+  UTF-8 and :buffer-size to 1024. If :flush is specified and is false,
+  the process will be flushed after writing."
+  [process from & {:keys [flush] :or {flush true} :as all}]
+  (apply io/copy from (:in process) all)
   (when flush (conch.core/flush process)))
 
 (defn stream-to-string
