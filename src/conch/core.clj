@@ -76,10 +76,14 @@
     (apply stream-to process from writer args)
     (str writer)))
 
+;; The writer that Clojure wraps System/out in for *out* seems to buffer
+;; things instead of writing them immediately. This wont work if you
+;; really want to stream stuff, so we'll just skip it and throw our data
+;; directly at System/out.
 (defn stream-to-out
-  "Streams the output of the process to *out*."
+  "Streams the output of the process to System/out"
   [process from & args]
-  (apply stream-to process from *out* args))
+  (apply stream-to process from (System/out) args))
 
 (defn feed-from-string
   "Feed the process some data from a string."
