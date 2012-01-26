@@ -55,7 +55,7 @@ user=> (future (sh/stream-to-out p :out))
 ```
 
 The `stream-to-out` function takes a process and either `:out` or `:err`
-and streams that to `*out*`. In this case, it has the effect of printing
+and streams that to `System/out`. In this case, it has the effect of printing
 everything we pipe into our cat process, since our cat process just
 outputs whatever we input.
 
@@ -158,11 +158,12 @@ feeding to a process. They are `stream-to` and `feed-from`. These
 functions are what the utility functions are built off of, and you can
 probably use them to stream to and feed from your own special places.
 
-### Encodings
+### Other options
 
 All of conch's streaming and feeding functions (including the lower
-level ones) can take an `:enc` key that specifies the encoding. This
-will be passed as the `:encoding` key to `clojure.java.io/copy`.
+level ones) pass all of their keyword options to `clojure.java.io/copy`.
+It can take an `:encoding` and `:buffer-size` option. Guess what they
+do.
 
 ## License
 
