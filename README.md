@@ -16,7 +16,7 @@ to things in real time and I wasn't able to do that with
 In Leiningen:
 
 ```clojure
-:dependencies [[conch "0.1.0"]]
+:dependencies [[conch "0.2.1"]]
 ```
 
 ## Usage
@@ -158,12 +158,42 @@ feeding to a process. They are `stream-to` and `feed-from`. These
 functions are what the utility functions are built off of, and you can
 probably use them to stream to and feed from your own special places.
 
+You might want to fire off a program that listens for input until EOF.
+In these cases, you can feed it data for as long as you want and just
+tell it when you are done. Let's use `pygmentize` as an example:
+
+```clojure
+user=> (def proc (sh/proc "pygmentize" "-fhtml" "-lclojure"))
+#'user/proc
+user=> (sh/feed-from-string proc "(+ 3 3)")
+nil
+user=> (sh/done proc)
+nil
+user=> (sh/stream-to-string proc :out)
+"<div class=\"highlight\"><pre><span class=\"p\">(</span><span class=\"nb\">+ </span><span class=\"mi\">3</span> <span class=\"mi\">3</span><span class=\"p\">)</span>\n</pre></div>\n"
+```
+
+When we call `done`, it closes the process's output stream which is
+like sending EOF. The process processes its input and then puts it on
+its input stream where we read it with `stream-to-string`.
+
 ### Other options
 
 All of conch's streaming and feeding functions (including the lower
 level ones) pass all of their keyword options to `clojure.java.io/copy`.
 It can take an `:encoding` and `:buffer-size` option. Guess what they
 do.
+
+### Key names
+
+You might notice that the map that `proc` returns is mapped like so:
+
+* `:in`  -> output stream
+* `:out` -> input stream
+
+I did this because swapping them feels counterintuitive. The output
+stream is what you put `:in` to and the input stream is what you pull
+`:out` from.
 
 ## License
 
