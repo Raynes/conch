@@ -1,3 +1,3 @@
-(defproject conch "0.2.0"
+(defproject conch "0.2.1"
   :description "A better shell-out library for Clojure."
-  :dependencies [[clojure "1.3.0"]])
+  :dependencies [[org.clojure/clojure "1.3.0"]])

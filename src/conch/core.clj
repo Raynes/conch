@@ -51,6 +51,11 @@
   [process]
   (.flush (:in process)))
 
+(defn done
+  "Close the process's output stream (sending EOF)."
+  [proc]
+  (-> proc :in .close))
+
 (defn stream-to
   "Stream :out or :err from a process to an input stream.
   Options passed are fed to clojure.java.io/copy. They are :encoding to 
