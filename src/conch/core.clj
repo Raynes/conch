@@ -3,15 +3,6 @@
   (:refer-clojure :exclude [flush])
   (:require [clojure.java.io :as io]))
 
-(defn env-strings
-  "Turns an array of strings of environment variable settings given
-  a map."
-  [m]
-  (when m
-    (if (map? m)
-      (into-array String (for [[k v] m] (str (name k) "=" v)))
-      m)))
-
 (defn proc
   "Spin off another process. Returns the process's input stream,
   output stream, and err stream as a map of :in, :out, and :err keys
@@ -20,15 +11,17 @@
   [& args]
   (let [[cmd args] (split-with (complement keyword?) args)
         args (apply hash-map args)
-        process (.exec (Runtime/getRuntime)
-                       (into-array String cmd)
-                       (env-strings (:env args))
-                       (when-let [dir (:dir args)]
-                         (io/file dir)))]
-    {:out (.getInputStream process)
-     :in  (.getOutputStream process)
-     :err (.getErrorStream process)
-     :process process}))
+        builder (ProcessBuilder. (into-array String cmd))
+        env (.environment builder)]
+    (doseq [[k v] (:env args)]
+      (.put env k v))
+    (when-let [dir (:dir args)]
+      (.directory builder (io/file dir)))
+    (let [process (.start builder)]
+      {:out (.getInputStream process)
+       :in  (.getOutputStream process)
+       :err (.getErrorStream process)
+       :process process})))
 
 (defn destroy
   "Destroy a process. Kills the process and closes its streams."
