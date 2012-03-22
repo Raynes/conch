@@ -7,7 +7,9 @@
   "Spin off another process. Returns the process's input stream,
   output stream, and err stream as a map of :in, :out, and :err keys
   If passed the optional :dir and/or :env keyword options, the dir
-  and enviroment will be set to what you specify."
+  and enviroment will be set to what you specify. If you pass
+  :verbose and it is true, commands will be printed before being
+  executed."
   [& args]
   (let [[cmd args] (split-with (complement keyword?) args)
         args (apply hash-map args)
@@ -17,6 +19,7 @@
       (.put env k v))
     (when-let [dir (:dir args)]
       (.directory builder (io/file dir)))
+    (when (:verbose args) (apply println cmd))
     (let [process (.start builder)]
       {:out (.getInputStream process)
        :in  (.getOutputStream process)
