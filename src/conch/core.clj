@@ -8,8 +8,9 @@
   output stream, and err stream as a map of :in, :out, and :err keys
   If passed the optional :dir and/or :env keyword options, the dir
   and enviroment will be set to what you specify. If you pass
-  :verbose and it is true, commands will be printed. If it is :very,
-  both commands and env vars will be printed."
+  :verbose and it is true, commands will be printed. If it is set to
+  :very, environment variables passed, dir, and the command will be
+  printed."
   [& args]
   (let [[cmd args] (split-with (complement keyword?) args)
         args (apply hash-map args)
@@ -20,8 +21,9 @@
     (when-let [dir (:dir args)]
       (.directory builder (io/file dir)))
     (when (:verbose args) (apply println cmd))
-    (when-let [env (and (= :very (:verbose args)) (:env args))]
-      (prn env))
+    (when (= :very (:verbose args))
+      (when-let [env (:env args)] (prn env))
+      (when-let [dir (:dir args)] (prn dir)))
     (let [process (.start builder)]
       {:out (.getInputStream process)
        :in  (.getOutputStream process)
