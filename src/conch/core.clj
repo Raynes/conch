@@ -1,6 +1,6 @@
 (ns conch.core
   "A simple but flexible library for shelling out from Clojure."
-  (:refer-clojure :exclude [flush])
+  (:refer-clojure :exclude [flush read-line])
   (:require [clojure.java.io :as io]))
 
 (defn proc
@@ -95,3 +95,8 @@
   [process s & args]
   (apply feed-from process (java.io.StringReader. s) args))
 
+(defn read-line
+  "Read a line from a process' :out or :err."
+  [process from]
+  (binding [*in* (io/reader (from process))]
+    (clojure.core/read-line)))
