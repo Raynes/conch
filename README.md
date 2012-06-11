@@ -1,5 +1,7 @@
 # conch
 
+[![Build Status](https://secure.travis-ci.org/Raynes/conch.png)](http://travis-ci.org/Raynes/conch)
+
 Conch is a simple but very flexible Clojure library for shelling out to
 external programs. It is to be used as an alternative to working
 directly with the `java.lang.Process` API and as a more flexible
