@@ -31,10 +31,8 @@
        :process process})))
 
 (defn destroy
-  "Destroy a process. Kills the process and closes its streams."
+  "Destroy a process."
   [process]
-  (doseq [[_ std-stream] (dissoc process :process)]
-    (.close std-stream))
   (.destroy (:process process)))
 
 ;; .waitFor returns the exit code. This makes this function useful for
