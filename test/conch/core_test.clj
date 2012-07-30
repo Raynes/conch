@@ -53,4 +53,6 @@
 
 (deftest exit-code-timeout-test
   (testing "Returns :timeout if a timeout and destroy was necessary."
-    (is (= :timeout (c/exit-code (c/proc "cat") 500)))))
+    (is (= :timeout (c/exit-code (c/proc "cat") 500))))
+  (testing "Exit code is returned if the timeout doesn't get hit."
+    (is (= 0 (c/exit-code (c/proc "ls") 10000)))))
