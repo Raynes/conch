@@ -48,9 +48,12 @@
   ([process timeout]
      (try
        (.get (future (.waitFor (:process process))) timeout TimeUnit/MILLISECONDS)
-       (catch TimeoutException e
-         (destroy process)
-         :timeout))))
+       (catch Exception e
+         (if (or (instance? TimeoutException e)
+                 (instance? TimeoutException (.getCause e)))
+           (do (destroy process)
+               :timeout)
+           (throw e))))))
 
 (defn flush
   "Flush the output stream of a process."
