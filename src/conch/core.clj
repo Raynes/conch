@@ -1,7 +1,8 @@
 (ns conch.core
   "A simple but flexible library for shelling out from Clojure."
   (:refer-clojure :exclude [flush read-line])
-  (:require [clojure.java.io :as io]))
+  (:require [clojure.java.io :as io])
+  (:import ( java.util.concurrent TimeUnit TimeoutException)))
 
 (defn proc
   "Spin off another process. Returns the process's input stream,
@@ -40,9 +41,16 @@
 ;; terminates.
 (defn exit-code
   "Waits for the process to terminate (blocking the thread) and returns
-  the exit code."
-  [process]
-  (.waitFor (:process process)))
+   the exit code. If timeout is passed, it is assumed to be milliseconds
+   to wait for the process to exit. If it does not exit in time, it is
+   killed (with or without fire)."
+  ([process] (.waitFor (:process process)))
+  ([process timeout]
+     (try
+       (.get (future (.waitFor (:process process))) timeout TimeUnit/MILLISECONDS)
+       (catch TimeoutException e
+         (destroy process)
+         :timeout))))
 
 (defn flush
   "Flush the output stream of a process."

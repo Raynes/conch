@@ -50,3 +50,7 @@
       (is (= "foo\n"
              (do (c/stream-to (c/proc "echo" "foo") :out writer)
                  (str writer)))))))
+
+(deftest exit-code-timeout-test
+  (testing "Returns :timeout if a timeout and destroy was necessary."
+    (is (= :timeout (c/exit-code (c/proc "cat") 500)))))
