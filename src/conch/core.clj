@@ -68,7 +68,7 @@
   (-> proc :in .close))
 
 (defn stream-to
-  "Stream :out or :err from a process to an input stream.
+  "Stream :out or :err from a process to an ouput stream.
   Options passed are fed to clojure.java.io/copy. They are :encoding to 
   set the encoding and :buffer-size to set the size of the buffer. 
   :encoding defaults to UTF-8 and :buffer-size to 1024."
