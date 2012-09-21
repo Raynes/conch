@@ -25,6 +25,8 @@
     (when (= :very (:verbose args))
       (when-let [env (:env args)] (prn env))
       (when-let [dir (:dir args)] (prn dir)))
+    (when (:redirect-err args)
+      (.redirectErrorStream builder true))
     (let [process (.start builder)]
       {:out (.getInputStream process)
        :in  (.getOutputStream process)
