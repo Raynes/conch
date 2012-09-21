@@ -12,6 +12,7 @@
                                     :creds :gpg}
                         "snapshots" {:url "http://oss.sonatype.org/content/repositories/snapshots"
                                      :creds :gpg}}
+  :repositories {"snapshots" {:url "http://oss.sonatype.org/content/repositories/snapshots"}}
   :pom-addition [:developers [:developer
                               [:name "Anthony Grimes"]
                               [:url "http://blog.raynes.me"]
