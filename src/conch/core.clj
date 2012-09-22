@@ -2,7 +2,7 @@
   "A simple but flexible library for shelling out from Clojure."
   (:refer-clojure :exclude [flush read-line])
   (:require [clojure.java.io :as io])
-  (:import ( java.util.concurrent TimeUnit TimeoutException)))
+  (:import (java.util.concurrent TimeUnit TimeoutException)))
 
 (defn proc
   "Spin off another process. Returns the process's input stream,
