@@ -14,22 +14,37 @@
      (number? buffer) (map string/join (partition buffer (char-seq reader)))
      :else (line-seq reader))))
 
+(defn callback [f buffer stream proc]
+  (.start
+   (Thread.
+    #(doseq [buffer (buffer-stream (stream proc) buffer)]
+       (f buffer proc)))))
+
+(defn output [proc k options]
+  (if (:seq options)
+    (buffer-stream (k proc) (:buffer options))
+    (conch/stream-to-string proc k)))
+
 (defn run-command [name args options]
   (let [proc (apply conch/proc name args)
-        {proc-out :out, proc-err :err, proc-in :in} proc
-        {:keys [out in buffer seq]} options]
-    (when-let [in-string in] (conch/feed-from-string proc in-string))
-    (cond
-     out (doseq [buffer (buffer-stream out (:buffer options))]
-           (out buffer proc))
-     seq (buffer-stream proc-out buffer)
-     :else (conch/stream-to-string proc :out))))
+        {:keys [buffer out in err]} options]
+    (when in  (conch/feed-from-string proc (:in proc)))
+    (when out (callback out buffer :out proc))
+    (when err (callback err buffer :err proc))
+    (let [proc-out (when-not out (output proc :out options))
+          proc-err (when-not err (output proc :err options))]
+      (if (:verbose options)
+        {:proc proc
+         :exit-code (conch/exit-code proc)
+         :stdout proc-out
+         :stderr proc-err}
+        proc-out))))
 
 (defn execute [name & args]
   (let [end (last args)
         options (and (map? end) end)
         args (if options (drop-last args) args)]
-    (if (or (:out options) (:background options))
+    (if (:background options)
       (future (run-command name args options))
       (run-command name args options))))
 
@@ -55,3 +70,4 @@
   [programs & body]
   `(let [~@(interleave programs (map (comp program-form str) programs))]
      ~@body))
+
