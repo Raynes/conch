@@ -44,7 +44,7 @@
   "Like let, but expects bindings to be symbols to strings of paths to
    programs."
   [bindings & body]
-  `(let [~@(seq/map-nth (fn [v] (program-form v)) 1 2 bindings)]
+  `(let [~@(seq/map-nth #(program-form %) 1 2 bindings)]
      ~@body))
 
 (defmacro with-programs
