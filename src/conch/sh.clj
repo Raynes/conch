@@ -15,12 +15,15 @@
      :else (line-seq reader))))
 
 (defn run-command [name args options]
-  (let [proc (apply conch/proc name args)]
-    (when-let [in (:in options)] (conch/feed-from-string proc in))
-    (if-let [callback (:out options)]
-      (doseq [buffer (buffer-stream (:out proc) (:buffer options))]
-        (callback buffer proc))
-      (conch/stream-to-string proc :out))))
+  (let [proc (apply conch/proc name args)
+        {proc-out :out, proc-err :err, proc-in :in} proc
+        {:keys [out in buffer seq]} options]
+    (when-let [in-string in] (conch/feed-from-string proc in-string))
+    (cond
+     out (doseq [buffer (buffer-stream out (:buffer options))]
+           (out buffer proc))
+     seq (buffer-stream proc-out buffer)
+     :else (conch/stream-to-string proc :out))))
 
 (defn execute [name & args]
   (let [end (last args)
