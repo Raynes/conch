@@ -4,6 +4,9 @@
            [clojure.string :as string]
            [useful.seq :as seq]))
 
+(defprotocol FeedIn
+  (feed [this]))
+
 (defn char-seq [reader]
   (map char (take-while #(not= % -1) (repeatedly #(.read reader)))))
 
@@ -25,8 +28,17 @@
     (buffer-stream (k proc) (:buffer options))
     (conch/stream-to-string proc k)))
 
+(defn add-proc-args [args options]
+  (if (seq options)
+    (apply concat args
+           (select-keys options
+                        [:redirect-err
+                         :env
+                         :dir]))
+    args))
+
 (defn run-command [name args options]
-  (let [proc (apply conch/proc name args)
+  (let [proc (apply conch/proc name (add-proc-args args options))
         {:keys [buffer out in err]} options]
     (when in  (conch/feed-from-string proc (:in proc)))
     (when out (callback out buffer :out proc))
@@ -42,7 +54,7 @@
 
 (defn execute [name & args]
   (let [end (last args)
-        options (and (map? end) end)
+        options (when (map? end) end)
         args (if options (drop-last args) args)]
     (if (:background options)
       (future (run-command name args options))
