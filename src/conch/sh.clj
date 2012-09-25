@@ -42,7 +42,7 @@
 
 (defn run-command [name args options]
   (let [proc (apply conch/proc name (add-proc-args args options))
-        {:keys [buffer out in err timeout]} options]
+        {:keys [buffer out in err timeout verbose]} options]
     (when in  (conch/feed-from-string proc (:in proc)))
     (when out (callback out buffer :out proc))
     (when err (callback err buffer :err proc))
@@ -50,11 +50,13 @@
                       (conch/exit-code proc timeout)
                       (conch/exit-code proc))]
       (if (= :timeout exit-code)
-        {:proc proc
-         :exit-code :timeout}
+        (if verbose
+          {:proc proc
+           :exit-code :timeout}
+          :timeout)
         (let [proc-out (when-not out (output proc :out options))
               proc-err (when-not err (output proc :err options))]
-          (if (:verbose options)
+          (if verbose
             {:proc proc
              :exit-code exit-code
              :stdout proc-out
