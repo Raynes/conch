@@ -56,14 +56,13 @@
           :timeout)
         (let [proc-out (when-not out (output proc :out options))
               proc-err (when-not err (output proc :err options))]
-          (if verbose
-            {:proc proc
-             :exit-code exit-code
-             :stdout proc-out
-             :stderr proc-err}
-            (if (= (:seq options) :err)
-              proc-err
-              proc-out)))))))
+          (cond
+           verbose {:proc proc
+                    :exit-code exit-code
+                    :stdout proc-out
+                    :stderr proc-err}
+           (= (:seq options) :err) proc-err
+           :else proc-out))))))
 
 (defn execute [name & args]
   (let [end (last args)
