@@ -24,9 +24,12 @@
        (f buffer proc)))))
 
 (defn output [proc k options]
-  (if (:seq options)
-    (buffer-stream (k proc) (:buffer options))
-    (conch/stream-to-string proc k)))
+  (let [seqify (:seq options)]
+    (if (or (= seqify k)
+            (= seqify :out k)
+            (and (true? seqify) (= k :out)))
+      (buffer-stream (k proc) (:buffer options))
+      (conch/stream-to-string proc k))))
 
 (defn add-proc-args [args options]
   (if (seq options)
@@ -56,7 +59,9 @@
              :exit-code exit-code
              :stdout proc-out
              :stderr proc-err}
-            proc-out))))))
+            (if (= (:seq options) :err)
+              proc-err
+              proc-out)))))))
 
 (defn execute [name & args]
   (let [end (last args)
