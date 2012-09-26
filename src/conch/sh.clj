@@ -29,7 +29,8 @@
             (= seqify :out k)
             (and (true? seqify) (= k :out)))
       (buffer-stream (k proc) (:buffer options))
-      (conch/stream-to-string proc k))))
+      (let [result (conch/stream-to-string proc k)]
+        (when-not (empty? result) result)))))
 
 (defn add-proc-args [args options]
   (if (seq options)
