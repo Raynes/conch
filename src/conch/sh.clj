@@ -17,11 +17,21 @@
      (number? buffer) (map string/join (partition buffer (char-seq reader)))
      :else (line-seq reader))))
 
-(defn callback [f buffer stream proc]
-  (.start
-   (Thread.
-    #(doseq [buffer (buffer-stream (stream proc) buffer)]
-       (f buffer proc)))))
+(defprotocol Redirectable
+  (redirect [this buffer k proc]))
+
+(extend-type java.io.File
+  Redirectable
+  (redirect [f buffer k proc]
+    (conch/stream-to proc k f)))
+
+(extend-type clojure.lang.IFn
+  Redirectable
+  (redirect [f buffer k proc]
+    (.start
+     (Thread.
+      #(doseq [buffer (buffer-stream (k proc) buffer)]
+         (f buffer proc))))))
 
 (defn output [proc k options]
   (let [seqify (:seq options)]
@@ -45,8 +55,8 @@
   (let [proc (apply conch/proc name (add-proc-args args options))
         {:keys [buffer out in err timeout verbose]} options]
     (when in  (conch/feed-from-string proc (:in proc)))
-    (when out (callback out buffer :out proc))
-    (when err (callback err buffer :err proc))
+    (when out (redirect out buffer :out proc))
+    (when err (redirect err buffer :err proc))
     (let [exit-code (if timeout
                       (conch/exit-code proc timeout)
                       (conch/exit-code proc))]
