@@ -16,10 +16,9 @@
 (extend-type clojure.lang.IFn
   Redirectable
   (redirect [f options k proc]
-    (.start
-     (Thread.
-      #(doseq [buffer nil #_(buffer-stream (k proc) (:buffer options))]
-         (f buffer proc))))))
+    (future
+      (doseq [buffer (get proc k)]
+        (f buffer proc)))))
 
 (defn seqify? [options k]
   (let [seqify (:seq options)]
