@@ -11,7 +11,9 @@
 (extend-type java.io.File
   Redirectable
   (redirect [f options k proc]
-    (conch/stream-to proc k f)))
+    (with-open [writer (java.io.FileWriter. f)]
+      (doseq [x (get proc k)]
+        (.write writer x)))))
 
 (extend-type clojure.lang.IFn
   Redirectable
