@@ -107,7 +107,9 @@
         exit-code (future (if timeout
                             (conch/exit-code proc timeout)
                             (conch/exit-code proc)))]
-    (when in (conch/feed-from-string proc (:in proc))) ;; This will become more sophisticated.
+    (when in
+      (conch/feed-from-string proc (:in options)) ;; This will become more sophisticated.
+      (conch/done proc))
     (let [proc-out (redirect out options :out proc)
           proc-err (redirect err options :err proc)]
       (cond
