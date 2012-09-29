@@ -59,10 +59,13 @@
 
 (defmethod buffer :number [kind reader]
   #(try
-     (let [buf (make-array Character/TYPE kind)]
-       (when (pos? (.read reader buf))
-         (apply str buf)))
-     ;; and wave 'em like we just don't care
+     (let [cbuf (make-array Character/TYPE kind)
+           size (.read reader cbuf)]
+       (when (pos? size)
+         (string/join
+          (if (= size kind)
+            cbuf
+            (take size cbuf)))))
      (catch java.io.IOException _)))
 
 (defmethod buffer :none [_ reader]
