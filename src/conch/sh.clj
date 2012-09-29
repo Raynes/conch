@@ -1,46 +1,43 @@
+
+
+
 (ns conch.sh
-  (require [conch.core :as conch]
-           [clojure.java.io :as io]
-           [clojure.string :as string]
-           [useful.seq :as seq]))
-
-(defprotocol FeedIn
-  (feed [this]))
-
-(defn char-seq [reader]
-  (map char (take-while #(not= % -1) (repeatedly #(.read reader)))))
-
-(defn buffer-stream [stream buffer]
-  (let [reader (io/reader stream)]
-    (cond
-     (= :none buffer) (char-seq reader)
-     (number? buffer) (map string/join (partition buffer (char-seq reader)))
-     :else (line-seq reader))))
+  (:require [conch.core :as conch]
+            [clojure.java.io :as io]
+            [clojure.string :as string]
+            [useful.seq :as seq])
+  (:import java.util.concurrent.LinkedBlockingQueue))
 
 (defprotocol Redirectable
-  (redirect [this buffer k proc]))
+  (redirect [this options k proc]))
 
 (extend-type java.io.File
   Redirectable
-  (redirect [f buffer k proc]
+  (redirect [f options k proc]
     (conch/stream-to proc k f)))
 
 (extend-type clojure.lang.IFn
   Redirectable
-  (redirect [f buffer k proc]
+  (redirect [f options k proc]
     (.start
      (Thread.
-      #(doseq [buffer (buffer-stream (k proc) buffer)]
+      #(doseq [buffer nil #_(buffer-stream (k proc) (:buffer options))]
          (f buffer proc))))))
 
-(defn output [proc k options]
+(defn seqify? [options k]
   (let [seqify (:seq options)]
-    (if (or (= seqify k)
-            (= seqify :out k)
-            (and (true? seqify) (= k :out)))
-      (buffer-stream (k proc) (:buffer options))
-      (let [result (conch/stream-to-string proc k)]
-        (when-not (empty? result) result)))))
+    (or (= seqify k)
+        (= seqify :out k)
+        (and (true? seqify) (= k :out)))))
+
+(extend-type nil
+  Redirectable
+  (redirect [_ options k proc]
+    (let [seqify (:seq options)
+          s (k proc)]
+      (if
+       (seqify? options k) s
+       (string/join s)))))
 
 (defn add-proc-args [args options]
   (if (seq options)
@@ -51,29 +48,74 @@
                          :dir]))
     args))
 
+(defn queue-seq [q]
+  (lazy-seq
+   (let [x (.take q)]
+     (when-not (= x :eof)
+       (cons x (queue-seq q))))))
+
+(defmulti buffer (fn [kind _]
+                   (if (number? kind)
+                     :number
+                     kind)))
+
+(defmethod buffer :number [kind reader]
+  #(try
+     (let [buf (make-array Character/TYPE kind)]
+       (when (pos? (.read reader buf))
+         (apply str buf)))
+     ;; and wave 'em like we just don't care
+     (catch java.io.IOException _)))
+
+(defmethod buffer :none [_ reader]
+  #(try
+     (let [c (.read reader)]
+       (when (pos? c)
+         (char c)))
+     (catch java.io.IOException _)))
+
+(defmethod buffer :line [_ reader]
+  #(try
+     (.readLine reader)
+     (catch java.io.IOException _)))
+
+(defn queue-stream [stream buffer-type]
+  (let [reader (io/reader stream)
+        queue (LinkedBlockingQueue.)]
+    (.start
+     (Thread.
+      (fn []
+        (doseq [x (take-while identity (repeatedly (buffer buffer-type reader)))]
+          (.put queue x))
+        (.put queue :eof))))
+    (queue-seq queue)))
+
+(defn queue-output [proc buffer-type]
+  (assoc proc
+    :out (queue-stream (:out proc) buffer-type)
+    :err (queue-stream (:err proc) buffer-type)))
+
 (defn run-command [name args options]
   (let [proc (apply conch/proc name (add-proc-args args options))
-        {:keys [buffer out in err timeout verbose]} options]
-    (when in  (conch/feed-from-string proc (:in proc)))
-    (when out (redirect out buffer :out proc))
-    (when err (redirect err buffer :err proc))
-    (let [exit-code (if timeout
-                      (conch/exit-code proc timeout)
-                      (conch/exit-code proc))]
-      (if (= :timeout exit-code)
-        (if verbose
-          {:proc proc
-           :exit-code :timeout}
-          :timeout)
-        (let [proc-out (when-not out (output proc :out options))
-              proc-err (when-not err (output proc :err options))]
-          (cond
-           verbose {:proc proc
-                    :exit-code exit-code
-                    :stdout proc-out
-                    :stderr proc-err}
-           (= (:seq options) :err) proc-err
-           :else proc-out))))))
+        options (update-in options [:buffer] #(or %
+                                                  (if (:seq options)
+                                                    :line
+                                                    1024)))
+        {:keys [buffer out in err timeout verbose]} options 
+        proc (queue-output proc buffer)
+        exit-code (future (if timeout
+                            (conch/exit-code proc timeout)
+                            (conch/exit-code proc)))]
+    (when in (conch/feed-from-string proc (:in proc))) ;; This will become more sophisticated.
+    (let [proc-out (redirect out options :out proc)
+          proc-err (redirect err options :err proc)]
+      (cond
+       verbose {:proc proc
+                :exit-code @exit-code
+                :stdout proc-out
+                :stderr proc-err}
+       (= (:seq options) :err) proc-err
+       :else proc-out))))
 
 (defn execute [name & args]
   (let [end (last args)
@@ -105,4 +147,5 @@
   [programs & body]
   `(let [~@(interleave programs (map (comp program-form str) programs))]
      ~@body))
+
 
