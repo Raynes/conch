@@ -1,6 +1,3 @@
-
-
-
 (ns conch.sh
   (:require [conch.core :as conch]
             [clojure.java.io :as io]
@@ -147,5 +144,3 @@
   [programs & body]
   `(let [~@(interleave programs (map (comp program-form str) programs))]
      ~@body))
-
-
