@@ -119,6 +119,8 @@
       (conch/done proc))
     (let [proc-out (redirect out options :out proc)
           proc-err (redirect err options :err proc)]
+      (when (future? proc-out) @proc-out)
+      (when (future? proc-err) @proc-err)
       (cond
        verbose {:proc proc
                 :exit-code @exit-code
