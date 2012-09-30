@@ -29,4 +29,13 @@
     (testing "Process exits and doesn't block forever"
       (sloop {:timeout 1000})) ; If the test doesn't sit here forever, we have won.
     (testing "Accumulate output before process dies from timeout"
-      (is (= "hi\nhi\n" (sloop {:timeout 2000}))))))
+      ;; We have to test a non-exact value here. We're measuring time in two
+      ;; different places/languages, so there may be three his on some runs
+      ;; and two on others.
+      (is (.startsWith (sloop {:timeout 2000}) "hi\nhi\n")))))
+
+(deftest background-test
+  (testing "Process runs in a future"
+    (let [f (sh/with-programs [echo] (echo "hi" {:background true}))]
+      (is (future? f))
+      (is (= "hi\n" @f)))))
