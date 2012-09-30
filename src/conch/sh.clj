@@ -96,12 +96,19 @@
     :out (queue-stream (:out proc) buffer-type)
     :err (queue-stream (:err proc) buffer-type)))
 
+(defn compute-buffer [options]
+  (update-in options [:buffer]
+             #(if-let [buffer %]
+                buffer
+                (if (or (:seq options)
+                        (ifn? (:out options))
+                        (ifn? (:err options)))
+                  :line
+                  1024))))
+
 (defn run-command [name args options]
   (let [proc (apply conch/proc name (add-proc-args args options))
-        options (update-in options [:buffer] #(or %
-                                                  (if (:seq options)
-                                                    :line
-                                                    1024)))
+        options (compute-buffer options) 
         {:keys [buffer out in err timeout verbose]} options 
         proc (queue-output proc buffer)
         exit-code (future (if timeout
