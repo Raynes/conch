@@ -23,3 +23,10 @@
           (is (= ["hi" "there"] @x))
           (errecho "hi\nthere" {:err (fn [line _] (swap! ex conj line))})
           (is (= ["hi" "there"] @ex)))))))
+
+(deftest timeout-test
+  (sh/let-programs [sloop "test/testfiles/sloop"]
+    (testing "Process exits and doesn't block forever"
+      (sloop {:timeout 1000})) ; If the test doesn't sit here forever, we have won.
+    (testing "Accumulate output before process dies from timeout"
+      (is (= "hi\nhi\n" (sloop {:timeout 2000}))))))
