@@ -22,7 +22,11 @@
           (echo "hi\nthere" {:out (fn [line _] (swap! x conj line))})
           (is (= ["hi" "there"] @x))
           (errecho "hi\nthere" {:err (fn [line _] (swap! ex conj line))})
-          (is (= ["hi" "there"] @ex)))))))
+          (is (= ["hi" "there"] @ex))))
+      (testing "Can redirect output to a writer"
+        (let [writer (java.io.StringWriter.)]
+          (echo "hi" {:out writer})
+          (is (= (str writer) "hi\n")))))))
 
 (deftest timeout-test
   (sh/let-programs [sloop "test/testfiles/sloop"]
