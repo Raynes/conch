@@ -22,6 +22,37 @@
       (doseq [buffer (get proc k)]
         (f buffer proc)))))
 
+(defprotocol Drinkable
+  (drink [this proc]))
+
+(extend-type clojure.lang.ISeq
+  Drinkable
+  (drink [s proc]
+    (with-open [writer (java.io.PrintWriter. (:in proc))]
+      (binding [*out* writer]
+        (doseq [x s]
+          (println x))))
+    (conch/done proc)))
+
+(extend-type java.io.File
+  Drinkable
+  (drink [f proc]
+    (conch/feed-from proc (io/reader f))
+    (conch/done proc)))
+
+(extend-type java.lang.String
+  Drinkable
+  (drink [s proc]
+    (conch/feed-from-string proc s)
+    (conch/done proc)))
+
+(defn get-drunk [item proc]
+  (drink
+   (if (coll? item)
+     (seq item)
+     item)
+   proc))
+
 (defn seqify? [options k]
   (let [seqify (:seq options)]
     (or (= seqify k)
@@ -114,9 +145,7 @@
         exit-code (future (if timeout
                             (conch/exit-code proc timeout)
                             (conch/exit-code proc)))]
-    (when in
-      (conch/feed-from-string proc (:in options)) ;; This will become more sophisticated.
-      (conch/done proc))
+    (when in (future (get-drunk in proc)))
     (let [proc-out (redirect out options :out proc)
           proc-err (redirect err options :err proc)]
       (when (future? proc-out) @proc-out)
