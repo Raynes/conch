@@ -42,14 +42,14 @@
 
 (deftest pipe-test
   (sh/let-programs [errecho "test/testfiles/errecho"]
-    (with-programs [echo cat]
+    (sh/with-programs [echo cat]
       (testing "Can pipe the output of one command as the input to another."
-        (is (= "hi" (cat {:in (echo "hi" {:seq true})})))
-        (is (= "hi" (cat {:in (errecho "hi" {:seq :err})})))))))
+        (is (= "hi\n" (cat {:in (echo "hi" {:seq true})})))
+        (is (= "hi\n" (cat {:in (errecho "hi" {:seq :err})})))))))
 
 (deftest in-test
-  (with-programs [echo cat]
+  (sh/with-programs [echo cat]
     (testing "Can input from string"
       (is (= "hi" (cat {:in "hi"}))))
     (testing "Can input a seq"
-      (is (= "hi\nthere" (cat {:in ["hi" "there"]}))))))
+      (is (= "hi\nthere\n" (cat {:in ["hi" "there"]}))))))
