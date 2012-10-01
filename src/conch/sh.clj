@@ -157,14 +157,16 @@
                             (conch/exit-code proc)))]
     (when in (future (get-drunk in proc)))
     (let [proc-out (future (redirect out options :out proc))
-          proc-err (future (redirect err options :err proc))]
+          proc-err (future (redirect err options :err proc))
+          proc-out @proc-out
+          proc-err @proc-err]
       (cond
        verbose {:proc proc
                 :exit-code @exit-code
-                :stdout @proc-out
-                :stderr @proc-err}
-       (= (:seq options) :err) @proc-err
-       :else @proc-out))))
+                :stdout proc-out
+                :stderr proc-err}
+       (= (:seq options) :err) proc-err
+       :else proc-out))))
 
 (defn execute [name & args]
   (let [end (last args)
