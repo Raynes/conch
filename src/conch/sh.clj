@@ -162,7 +162,7 @@
           proc-err @proc-err]
       (cond
        verbose {:proc proc
-                :exit-code @exit-code
+                :exit-code exit-code
                 :stdout proc-out
                 :stderr proc-err}
        (= (:seq options) :err) proc-err
