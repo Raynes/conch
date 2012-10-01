@@ -18,9 +18,8 @@
 (extend-type clojure.lang.IFn
   Redirectable
   (redirect [f options k proc]
-    (future
-      (doseq [buffer (get proc k)]
-        (f buffer proc)))))
+    (doseq [buffer (get proc k)]
+      (f buffer proc))))
 
 (extend-type java.io.Writer
   Redirectable
@@ -157,17 +156,15 @@
                             (conch/exit-code proc timeout)
                             (conch/exit-code proc)))]
     (when in (future (get-drunk in proc)))
-    (let [proc-out (redirect out options :out proc)
-          proc-err (redirect err options :err proc)]
-      (when (future? proc-out) @proc-out)
-      (when (future? proc-err) @proc-err)
+    (let [proc-out (future (redirect out options :out proc))
+          proc-err (future (redirect err options :err proc))]
       (cond
        verbose {:proc proc
                 :exit-code @exit-code
-                :stdout proc-out
-                :stderr proc-err}
-       (= (:seq options) :err) proc-err
-       :else proc-out))))
+                :stdout @proc-out
+                :stderr @proc-err}
+       (= (:seq options) :err) @proc-err
+       :else @proc-out))))
 
 (defn execute [name & args]
   (let [end (last args)
