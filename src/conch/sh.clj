@@ -30,8 +30,7 @@
 (defn seqify? [options k]
   (let [seqify (:seq options)]
     (or (= seqify k)
-        (= seqify :out k)
-        (and (true? seqify) (= k :out)))))
+        (true? seqify))))
 
 (extend-type nil
   Redirectable
@@ -142,6 +141,7 @@
              #(if-let [buffer %]
                 buffer
                 (if (or (:seq options)
+                        (:pipe options)
                         (ifn? (:out options))
                         (ifn? (:err options)))
                   :line
