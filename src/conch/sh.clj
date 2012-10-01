@@ -22,6 +22,21 @@
       (doseq [buffer (get proc k)]
         (f buffer proc)))))
 
+(defn seqify? [options k]
+  (let [seqify (:seq options)]
+    (or (= seqify k)
+        (= seqify :out k)
+        (and (true? seqify) (= k :out)))))
+
+(extend-type nil
+  Redirectable
+  (redirect [_ options k proc]
+    (let [seqify (:seq options)
+          s (k proc)]
+      (if
+       (seqify? options k) s
+       (string/join s)))))
+
 (defprotocol Drinkable
   (drink [this proc]))
 
@@ -57,21 +72,6 @@
      (seq item)
      item)
    proc))
-
-(defn seqify? [options k]
-  (let [seqify (:seq options)]
-    (or (= seqify k)
-        (= seqify :out k)
-        (and (true? seqify) (= k :out)))))
-
-(extend-type nil
-  Redirectable
-  (redirect [_ options k proc]
-    (let [seqify (:seq options)
-          s (k proc)]
-      (if
-       (seqify? options k) s
-       (string/join s)))))
 
 (defn add-proc-args [args options]
   (if (seq options)
