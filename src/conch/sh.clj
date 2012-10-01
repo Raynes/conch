@@ -22,6 +22,12 @@
       (doseq [buffer (get proc k)]
         (f buffer proc)))))
 
+(extend-type java.io.Writer
+  Redirectable
+  (redirect [w options k proc]
+    (doseq [x (get proc k)]
+      (.write w x))))
+
 (defn seqify? [options k]
   (let [seqify (:seq options)]
     (or (= seqify k)
