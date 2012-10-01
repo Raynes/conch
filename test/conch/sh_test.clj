@@ -39,3 +39,17 @@
     (let [f (sh/with-programs [echo] (echo "hi" {:background true}))]
       (is (future? f))
       (is (= "hi\n" @f)))))
+
+(deftest pipe-test
+  (sh/let-programs [errecho "test/testfiles/errecho"]
+    (with-programs [echo cat]
+      (testing "Can pipe the output of one command as the input to another."
+        (is (= "hi" (cat {:in (echo "hi" {:seq true})})))
+        (is (= "hi" (cat {:in (errecho "hi" {:seq :err})})))))))
+
+(deftest in-test
+  (with-programs [echo cat]
+    (testing "Can input from string"
+      (is (= "hi" (cat {:in "hi"}))))
+    (testing "Can input a seq"
+      (is (= "hi\nthere" (cat {:in ["hi" "there"]}))))))
