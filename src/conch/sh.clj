@@ -34,11 +34,16 @@
           (println x))))
     (conch/done proc)))
 
+(extend-type java.io.Reader
+  Drinkable
+  (drink [r proc]
+    (conch/feed-from proc r)
+    (conch/done proc)))
+
 (extend-type java.io.File
   Drinkable
   (drink [f proc]
-    (conch/feed-from proc (io/reader f))
-    (conch/done proc)))
+    (drink (io/reader f) proc)))
 
 (extend-type java.lang.String
   Drinkable
