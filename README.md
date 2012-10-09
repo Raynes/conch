@@ -18,7 +18,7 @@ to things in real time and I wasn't able to do that with
 In Leiningen:
 
 ```clojure
-:dependencies [[conch "0.2.1"]]
+:dependencies [[conch "0.3.1"]]
 ```
 
 ## Usage
