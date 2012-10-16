@@ -2,26 +2,188 @@
 
 [![Build Status](https://secure.travis-ci.org/Raynes/conch.png)](http://travis-ci.org/Raynes/conch)
 
-Conch is a simple but very flexible Clojure library for shelling out to
-external programs. It is to be used as an alternative to working
-directly with the `java.lang.Process` API and as a more flexible
-alternative to `clojure.java.shell`.
+Conch is actually two libraries. The first, `conch.core` is a simple low-level
+interface to the Java process APIs. The second and more interesting library is
+an interface to `conch.core` inspired by the Python
+[sh](http://amoffat.github.com/sh/) library.
 
-`clojure.java.shell` is designed to produce quick one-off processes.
-There is no way to interact with a running process over time. I've found
-myself needing to shell out and stream the output of an external process
-to things in real time and I wasn't able to do that with
-`clojure.java.shell`.
+The general idea is to be able to call programs just like you would call Clojure
+functions. See Usage for examples.
 
 ## Installation
 
 In Leiningen:
 
 ```clojure
-:dependencies [[conch "0.3.1"]]
+:dependencies [[conch "0.4.0"]]
 ```
 
 ## Usage
+
+First of all, let's `require` a few things.
+
+```clojure
+user> (require '[conch.sh :refer [programs with-programs let-programs]])
+nil
+```
+
+Let's call a program. What should we call? Let's call `echo`, because I
+obviously like to hear myself talk.
+
+```clojure
+user> (programs echo)
+#'user/echo
+user> (echo "Hi!")
+"Hi!\n"
+```
+
+Cool! `programs` is a simple macro that takes a number of symbols and creates
+functions that calls programs on the PATH with those names. `echo` is now just a
+normal function defined with `defn` just like any other.
+
+`with-programs` and `let-programs` are lexical and specialized versions of
+`programs`. `with-programs` is exactly the same as `programs`, only it defines
+functions lexically:
+
+```clojure
+user> (with-programs [ls] (ls))
+"#README.md#\nREADME.md\nclasses\ndocs\nfoo.py\nlib\nlol\npom.xml\npom.xml.asc\nproject.clj\nsrc\ntarget\ntest\ntestfile\n"
+user> ls
+CompilerException java.lang.RuntimeException: Unable to resolve symbol: ls in
+this context, compiling:(NO_SOURCE_PATH:1) 
+```
+
+`let-programs` is similar, but is useful for when you want to specify a path to
+a program that is not on the PATH:
+
+```clojure
+user> (let-programs [echo "/bin/echo"] (echo "hi!"))
+"hi!\n"
+```
+
+Bad example since `echo` *is* on the path, but if it wasn't there already it
+still would have worked. I promise.
+
+### Input
+
+You can pass input to a program easily:
+
+```clojure
+user> (programs cat)
+#'user/cat
+user> (cat {:in "hi"})
+"hi"
+user> (cat {:in ["hi" "there"]})
+"hi\nthere\n"
+user> (cat {:in (java.io.StringReader. "hi")})
+"hi"
+```
+
+`:in` is handled by a protocol and can thus be extended to support other data.
+
+### Output
+
+So, going back to our `ls` example. Of course, `ls` gives us a bunch of
+lines. In a lot of cases, we're going to want to process lines individually. We
+can do that by telling conch that we want a lazy seq of lines instead of a
+monolithic string:
+
+```clojure
+user> (ls {:seq true})
+("#README.md#" "README.md" "classes" "docs" "foo.py" "lib" "lol" "pom.xml"
+"pom.xml.asc" "project.clj" "src" "target" "test" "testfile")
+```
+
+We can also redirect output to other places.
+
+```clojure
+user> (let [writer (java.io.StringWriter.)] (echo "foo" {:out writer}) (str writer))
+"foo\n"
+user> (echo "foo" {:out (java.io.File. "conch")})
+nil
+user> (slurp "conch")
+"foo\n"
+```
+
+And if that wasn't cool enough for you, `:out` is handled by a protocol and thus
+can be extended.
+
+### Need Moar INNNNPUUUUUUT
+
+Need the exit code and stuff? Sure:
+
+```clojure
+user> (echo "foo" {:verbose true})
+{:proc {:out ("foo\n"), :in #<ProcessPipeOutputStream
+java.lang.UNIXProcess$ProcessPipeOutputStream@19c12ee7>, :err (), :process
+#<UNIXProcess java.lang.UNIXProcess@2bfabe2a>}, :exit-code
+#<core$future_call$reify__6110@5adacdf4: 0>, :stdout "foo\n", :stderr ""}
+```
+
+### Timeouts
+
+```clojure
+user> (sleep "5")
+... yawn ...
+```
+
+Tired of waiting for that pesky process to exit? Make it go away!
+
+```clojure
+user> (sleep "5" {:timeout 2000})
+... two seconds later ...
+""
+```
+
+Much better.
+
+### Piping
+
+You can pipe the output of one program as the input to another about how you'd
+expect:
+
+```clojure
+user> (programs grep ps)
+#'user/ps
+user> (grep "ssh" {:in (ps "-e" {:seq true})})
+" 4554 ??         0:00.77 /usr/bin/ssh-agent -l\n"
+```
+
+These functions also look for a lazy seq arg, so you can get rid of the explicit
+`:in` part.
+
+```clojure
+user> (programs grep ps)
+#'user/ps
+user> (grep "ssh" (ps "-e" {:seq true}))
+" 4554 ??         0:00.77 /usr/bin/ssh-agent -l\n"
+```
+
+### Buffering
+
+Conch gets rid of some ugly edge-cases by **always reading process output
+immediately when it becomes available**. It buffer this data into a queue that
+you consume however you want. This is how returning lazy seqs work. Keep in mind
+that if you don't consume data, it is being held in memory.
+
+You can change how conch buffers data using the `:buffer` key.
+
+```clojure
+user> (ls {:seq true :buffer 5})
+("#READ" "ME.md" "#\nREA" "DME.m" "d\ncla" "sses\n" "conch" "\ndocs" "\nfoo." "py\nli" "b\nlol" "\npom." "xml\np" "om.xm" "l.asc" "\nproj" "ect.c" "lj\nsr" "c\ntar" "get\nt" "est\nt" "estfi" "le\n")
+user> (ls {:seq true :buffer :none})
+(\# \R \E \A \D \M \E \. \m \d \# \newline \R \E \A \D \M \E \. \m \d \newline
+\c \l \a \s \s \e \s \newline \c \o \n \c \h \newline \d \o \c \s \newline \f \o
+\o \. \p \y \newline \l \i \b \newline \l \o \l \newline \p \o \m \. \x \m \l
+\newline \p \o \m \. \x \m \l \. \a \s \c \newline \p \r \o \j \e \c \t \. \c \l
+\j \newline \s \r \c \newline \t \a \r \g \e \t \newline \t \e \s \t \newline \t
+\e \s \t \f \i \l \e \newline)
+```
+
+Another nice thing gained by the way conch consumes data is that it is able to
+kill a process after a timeout and keep whatever data it has already consumed.
+
+## Low Level Usage
 
 Conch is pretty simple. You spin off a process with `proc`.
 
