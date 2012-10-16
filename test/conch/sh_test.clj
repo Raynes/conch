@@ -49,7 +49,8 @@
     (sh/with-programs [echo cat]
       (testing "Can pipe the output of one command as the input to another."
         (is (= "hi\n" (cat {:in (echo "hi" {:seq true})})))
-        (is (= "hi\n" (cat {:in (errecho "hi" {:seq :err})})))))))
+        (is (= "hi\n" (cat {:in (errecho "hi" {:seq :err})})))
+        (is (= "hi\n" (cat (echo "hi" {:seq true}))))))))
 
 (deftest in-test
   (sh/with-programs [echo cat]

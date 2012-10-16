@@ -170,8 +170,11 @@
 
 (defn execute [name & args]
   (let [end (last args)
+        in-arg (first (filter #(seq? %) args))
+        args (remove #(seq? %) args)
         options (when (map? end) end)
-        args (if options (drop-last args) args)]
+        args (if options (drop-last args) args)
+        options (if in-arg (assoc options :in in-arg) options)]
     (if (:background options)
       (future (run-command name args options))
       (run-command name args options))))
