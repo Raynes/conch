@@ -183,6 +183,14 @@ user> (ls {:seq true :buffer :none})
 Another nice thing gained by the way conch consumes data is that it is able to
 kill a process after a timeout and keep whatever data it has already consumed.
 
+
+### PTY stuff
+
+PTY stuff seems like it'd be a lot of work and would involve non-Clojure
+stuff. If you need a PTY for output, I suggest wrapping your programs in
+'unbuffer' from the expect package. It usually does the trick for unbuffering
+program output by making it think a terminal is talking to it.
+
 ## Low Level Usage
 
 Conch is pretty simple. You spin off a process with `proc`.
