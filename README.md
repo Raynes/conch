@@ -2,9 +2,9 @@
 
 [![Build Status](https://secure.travis-ci.org/Raynes/conch.png)](http://travis-ci.org/Raynes/conch)
 
-Conch is actually two libraries. The first, `conch.core` is a simple low-level
+Conch is actually two libraries. The first, `me.raynes.conch.low-level` is a simple low-level
 interface to the Java process APIs. The second and more interesting library is
-an interface to `conch.core` inspired by the Python
+an interface to low-level inspired by the Python
 [sh](http://amoffat.github.com/sh/) library.
 
 The general idea is to be able to call programs just like you would call Clojure
@@ -15,7 +15,7 @@ functions. See Usage for examples.
 In Leiningen:
 
 ```clojure
-:dependencies [[me.raynes/conch "0.4.0"]]
+:dependencies [[conch "0.5.0"]]
 ```
 
 ## Usage
@@ -23,7 +23,7 @@ In Leiningen:
 First of all, let's `require` a few things.
 
 ```clojure
-user> (require '[conch.sh :refer [programs with-programs let-programs]])
+user> (require '[me.raynes.conch :refer [programs with-programs let-programs]])
 nil
 ```
 
@@ -274,6 +274,12 @@ the executable and the rest of them the arguments to that executable.
 ```clojure
 user=> (sh/proc "ls" "-l")
 {:out #<BufferedInputStream java.io.BufferedInputStream@7fb6634c>, :in #<BufferedOutputStream java.io.BufferedOutputStream@1f315415>, :err #<DeferredCloseInputStream java.lang.UNIXProcess$DeferredCloseInputStream@5f873eb2>, :process #<UNIXProcess java.lang.UNIXProcess@2825491d>}
+```
+
+## low-level
+
+```clojure
+(require '[me.raynes.conch.low-level :as sh])
 ```
 
 Here is an easy way to get the output of a one-off process like this as
