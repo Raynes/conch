@@ -2,7 +2,7 @@
   (:use clojure.test
         [clojure.java.io :only [file]]
         [clojure.string :only [trim split]])
-  (:require [conch.core :as c]))
+  (:require [me.raynes.conch.low-level-tes :as c]))
 
 (defn parse-env [env]
   (into {}

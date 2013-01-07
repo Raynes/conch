@@ -1,6 +1,6 @@
-(ns conch.sh-test
+(ns me.raynes.conch-test
   (:use clojure.test)
-  (:require [conch.sh :as sh]))
+  (:require [me.raynes.conch :as sh]))
 
 (deftest output-test
   (sh/let-programs [errecho "test/testfiles/errecho"]

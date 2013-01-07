@@ -1,4 +1,4 @@
-(ns conch.core
+(ns me.raynes.conch.low-level
   "A simple but flexible library for shelling out from Clojure."
   (:refer-clojure :exclude [flush read-line])
   (:require [clojure.java.io :as io])
@@ -81,9 +81,9 @@
   and :buffer-size to set the size of the buffer. :encoding defaults to
   UTF-8 and :buffer-size to 1024. If :flush is specified and is false,
   the process will be flushed after writing."
-  [process from & {:keys [flush] :or {flush true} :as all}]
+  [process from & {flush? :flush :or {flush? true} :as all}]
   (apply io/copy from (:in process) all)
-  (when flush (conch.core/flush process)))
+  (when flush? (flush process)))
 
 (defn stream-to-string
   "Streams the output of the process to a string and returns it."
