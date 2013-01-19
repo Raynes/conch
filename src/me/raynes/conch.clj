@@ -201,19 +201,3 @@
   [programs & body]
   `(let [~@(interleave programs (map (comp program-form str) programs))]
      ~@body))
-
-(defn ssh-example []
-  (with-programs [unbuffer]
-    (let [proc (unbuffer "ssh" "crisis"
-                         "-o" "PubkeyAuthentication no"
-                         {:seq true :verbose true :buffer :none})]
-      (loop [acc "" s (:stdout proc)]
-        (when (seq s)
-          (let [c (first s)
-                prompt? (.endsWith "password:" acc)]
-            (print c)
-            (flush)
-            (when prompt?
-              (conch/feed-from-string (:proc proc) "IncorrectPassword\n")
-              (println "passwerd"))
-            (recur (str acc c) (rest s))))))))
