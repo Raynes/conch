@@ -191,6 +191,16 @@ stuff. If you need a PTY for output, I suggest wrapping your programs in
 'unbuffer' from the expect package. It usually does the trick for unbuffering
 program output by making it think a terminal is talking to it.
 
+### Hanging
+
+You might run into an issue where your program finishes after using conch but
+does not exit. Conch uses futures under the hood which spin off threads that
+stick around for a minute or so after everything else is done. This is an
+unfortunate side effect, but futures are necessary to conch's functionality so
+I'm not sure there is much I can do about it.
+
+You can work around this by adding a `(System/exit 0)` call to the end of your program.
+
 ## Low Level Usage
 
 Conch is pretty simple. You spin off a process with `proc`.
