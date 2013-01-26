@@ -169,6 +169,12 @@
        :else proc-out))))
 
 (defn execute [name & args]
+  (let [[[options] args] ((juxt filter remove) map? args)]
+    (if (:background options)
+      (future (run-command name args options))
+      (run-command name args options))))
+
+(defn execute [name & args]
   (let [end (last args)
         in-arg (first (filter #(seq? %) args))
         args (remove #(seq? %) args)
