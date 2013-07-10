@@ -11,12 +11,15 @@
   and enviroment will be set to what you specify. If you pass
   :verbose and it is true, commands will be printed. If it is set to
   :very, environment variables passed, dir, and the command will be
-  printed."
+  printed. If passed the :clear-env keyword option, then the process
+  will not inherit its environment from its parent process."
   [& args]
   (let [[cmd args] (split-with (complement keyword?) args)
         args (apply hash-map args)
         builder (ProcessBuilder. (into-array String cmd))
         env (.environment builder)]
+    (when (:clear-env args)
+      (.clear env))
     (doseq [[k v] (:env args)]
       (.put env k v))
     (when-let [dir (:dir args)]
