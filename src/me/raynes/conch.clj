@@ -2,7 +2,7 @@
   (:require [me.raynes.conch.low-level :as conch]
             [clojure.java.io :as io]
             [clojure.string :as string]
-            [useful.seq :as seq])
+            [flatland.useful.seq :as seq])
   (:import java.util.concurrent.LinkedBlockingQueue))
 
 (defprotocol Redirectable
