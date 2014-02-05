@@ -203,7 +203,13 @@ You can work around this by adding a `(System/exit 0)` call to the end of your p
 
 ## Low Level Usage
 
-Conch is pretty simple. You spin off a process with `proc`.
+The low-level API is available in a separate package:
+
+```clojure
+(use '[me.raynes.conch.low-level :as sh])
+```
+
+It is pretty simple. You spin off a process with `proc`.
 
 ```clojure
 user=> (def p (sh/proc "cat"))
