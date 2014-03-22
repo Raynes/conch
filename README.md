@@ -15,7 +15,7 @@ functions. See Usage for examples.
 In Leiningen:
 
 ```clojure
-:dependencies [[me.raynes/conch "0.5.0"]]
+:dependencies [[me.raynes/conch "0.6.0"]]
 ```
 
 ## Usage
