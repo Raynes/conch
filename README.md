@@ -14,9 +14,7 @@ functions. See Usage for examples.
 
 In Leiningen:
 
-```clojure
-:dependencies [[me.raynes/conch "0.5.0"]]
-```
+[![version](https://clojars.org/me.raynes/moments/latest-version.svg)](https://clojars.org/me.raynes/moments)
 
 ## Usage
 
