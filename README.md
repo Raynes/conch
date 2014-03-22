@@ -14,7 +14,7 @@ functions. See Usage for examples.
 
 In Leiningen:
 
-[![version](https://clojars.org/me.raynes/moments/latest-version.svg)](https://clojars.org/me.raynes/moments)
+[![version](https://clojars.org/me.raynes/conch/latest-version.svg)](https://clojars.org/me.raynes/conch)
 
 ## Usage
 
