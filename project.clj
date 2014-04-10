@@ -3,8 +3,7 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :url "https://github.com/Raynes/conch"
   :description "A better shell-out library for Clojure."
-  :dependencies [[org.clojure/clojure "1.4.0"]
-                 [org.flatland/useful "0.10.6"]]
+  :dependencies [[org.clojure/clojure "1.4.0"]]
   :aliases {"testall" ["with-profile" "dev,default:dev,1.2,default:dev,1.3,default:dev,1.5,default" "test"]}
   :profiles {:1.5 {:dependencies [[org.clojure/clojure "1.5.0-master-SNAPSHOT"]]}
              :release {:deploy-repositories {"releases" {:url "https://oss.sonatype.org/service/local/staging/deploy/maven2"
