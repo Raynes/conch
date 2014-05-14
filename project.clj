@@ -1,4 +1,4 @@
-(defproject me.raynes/conch "0.6.0"
+(defproject me.raynes/conch "0.6.1"
   :license {:name "Eclipse Public License - v 1.0"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :url "https://github.com/Raynes/conch"

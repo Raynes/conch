@@ -148,7 +148,7 @@
                   1024))))
 
 (defn run-command [name args options]
-  (let [proc (apply conch/proc name (add-proc-args args options))
+  (let [proc (apply conch/proc name (add-proc-args (map str args) options))
         options (compute-buffer options) 
         {:keys [buffer out in err timeout verbose]} options 
         proc (queue-output proc buffer)

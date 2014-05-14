@@ -44,6 +44,10 @@
       (is (future? f))
       (is (= "hi\n" @f)))))
 
+(deftest convert-test
+  (testing "Stringifies args"
+    (is (= "lol\n" (sh/with-programs [echo] (echo (java.io.File. "lol")))))))
+
 (deftest pipe-test
   (sh/let-programs [errecho "test/testfiles/errecho"]
     (sh/with-programs [echo cat]
