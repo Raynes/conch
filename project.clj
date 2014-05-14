@@ -1,12 +1,13 @@
-(defproject me.raynes/conch "0.6.1"
+(defproject me.raynes/conch "0.7.0"
   :license {:name "Eclipse Public License - v 1.0"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :url "https://github.com/Raynes/conch"
   :description "A better shell-out library for Clojure."
-  :dependencies [[org.clojure/clojure "1.4.0"]
+  :dependencies [[org.clojure/clojure "1.6.0"]
                  [org.flatland/useful "0.10.6"]]
-  :aliases {"testall" ["with-profile" "dev,default:dev,1.2,default:dev,1.3,default:dev,1.5,default" "test"]}
-  :profiles {:1.5 {:dependencies [[org.clojure/clojure "1.5.0-master-SNAPSHOT"]]}
+  :aliases {"testall" ["with-profile" "dev,default:dev,1.5,default:dev,1.4,default" "test"]}
+  :profiles {:1.5 {:dependencies [[org.clojure/clojure "1.5.0"]]}
+             :1.4 {:dependencies [[org.clojure/clojure "1.4.0"]]}
              :release {:deploy-repositories {"releases" {:url "https://oss.sonatype.org/service/local/staging/deploy/maven2"
                                                          :creds :gpg}
                                              "snapshots" {:url "http://oss.sonatype.org/content/repositories/snapshots"
