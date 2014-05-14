@@ -21,7 +21,7 @@ In Leiningen:
 First of all, let's `require` a few things.
 
 ```clojure
-user> (require '[me.raynes.conch :refer [programs with-programs let-programs]])
+user> (require '[me.raynes.conch :refer [programs with-programs let-programs] :as sh])
 nil
 ```
 
@@ -130,10 +130,49 @@ Tired of waiting for that pesky process to exit? Make it go away!
 ```clojure
 user> (sleep "5" {:timeout 2000})
 ... two seconds later ...
-""
+ExceptionInfo Program returned non-zero exit code :timeout  clojure.core/ex-info (core.clj:4227)
 ```
 
 Much better.
+
+### Exceptions
+
+Conch can handle exit codes pretty well. You can make it do pretty much whatever
+you want in failure scenarios.
+
+By default, conch throws `ExceptionInfo` exceptions for non-zero exit codes, as
+demonstrated here:
+
+```clojure
+user> (ls "-2")
+ExceptionInfo Program returned non-zero exit code 1  clojure.core/ex-info
+(core.clj:4227)
+```
+
+This exception's data is the same result you'd get by passing the `:verbose`
+option:
+
+```clojure
+user> (ex-data *e)
+{:proc {:out (), :in #<ProcessPipeOutputStream java.lang.UNIXProcess$ProcessPipeOutputStream@79bb65ee>, :err ("ls: illegal
+option -- 2\nusage: ls [-ABCFGHLOPRSTUWabcdefghiklmnopqrstuwx1] [file ...]\n"), :process #<UNIXProcess java.lang.UNIXProcess@1172897f>}, :exit-code #<core$future_call$reify__6110@76a0f9cb: 1>, :stdout "", :stderr "ls: illegal option -- 2\nusage: ls [-ABCFGHLOPRSTUWabcdefghiklmnopqrstuwx1] [file ...]\n"}
+```
+
+You can control this behavior in two ways. The first way is to set
+`me.raynes.conch/*throw*` to `false`:
+
+```clojure
+user> (binding [sh/*throw* false] (ls "-2"))
+""
+```
+
+You can also just override whatever `*throw*` is with the `:throw` argument to
+the functions themselves:
+
+```clojure
+user> (ls "-2" {:throw false})
+""
+```
 
 ### Piping
 

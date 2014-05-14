@@ -5,6 +5,11 @@
             [flatland.useful.seq :as seq])
   (:import java.util.concurrent.LinkedBlockingQueue))
 
+(def ^:dynamic *throw*
+  "If set to false, exit codes are ignored. If true (default),
+   throw exceptions for non-zero exit codes."
+  true)
+
 (defprotocol Redirectable
   (redirect [this options k proc]))
 
@@ -147,6 +152,11 @@
                   :line
                   1024))))
 
+(defn exit-exception [verbose]
+  (throw (ex-info (str "Program returned non-zero exit code "
+                       @(:exit-code verbose))
+                  verbose)))
+
 (defn run-command [name args options]
   (let [proc (apply conch/proc name (add-proc-args (map str args) options))
         options (compute-buffer options) 
@@ -159,14 +169,27 @@
     (let [proc-out (future (redirect out options :out proc))
           proc-err (future (redirect err options :err proc))
           proc-out @proc-out
-          proc-err @proc-err]
-      (cond
-       verbose {:proc proc
-                :exit-code exit-code
-                :stdout proc-out
-                :stderr proc-err}
-       (= (:seq options) :err) proc-err
-       :else proc-out))))
+          proc-err @proc-err
+          verbose-out {:proc proc
+                       :exit-code exit-code
+                       :stdout proc-out
+                       :stderr proc-err}
+          result (cond
+                  verbose verbose-out
+                  (= (:seq options) :err) proc-err
+                  :else proc-out)]
+      ;; Not using `zero?` here because exit-code can be a keyword.
+      (if (= 0 @exit-code)
+        result
+        (cond (and (contains? options :throw)
+                   (:throw options))
+              (exit-exception verbose-out)
+
+              (and (not (contains? options :throw))
+                   *throw*)
+              (exit-exception verbose-out)
+
+              :else result)))))
 
 (defn execute [name & args]
   (let [[[options] args] ((juxt filter remove) map? args)]

@@ -1,6 +1,7 @@
 (ns me.raynes.conch-test
   (:use clojure.test)
-  (:require [me.raynes.conch :as sh]))
+  (:require [me.raynes.conch :as sh])
+  (:import clojure.lang.ExceptionInfo))
 
 (deftest output-test
   (sh/let-programs [errecho "test/testfiles/errecho"]
@@ -29,14 +30,15 @@
           (is (= (str writer) "hi\n")))))))
 
 (deftest timeout-test
-  (sh/let-programs [sloop "test/testfiles/sloop"]
-    (testing "Process exits and doesn't block forever"
-      (sloop {:timeout 1000})) ; If the test doesn't sit here forever, we have won.
-    (testing "Accumulate output before process dies from timeout"
-      ;; We have to test a non-exact value here. We're measuring time in two
-      ;; different places/languages, so there may be three his on some runs
-      ;; and two on others.
-      (is (.startsWith (sloop {:timeout 2000}) "hi\nhi\n")))))
+  (binding [sh/*throw* false]
+    (sh/let-programs [sloop "test/testfiles/sloop"]
+      (testing "Process exits and doesn't block forever"
+        (sloop {:timeout 1000})) ; If the test doesn't sit here forever, we have won.
+      (testing "Accumulate output before process dies from timeout"
+        ;; We have to test a non-exact value here. We're measuring time in two
+        ;; different places/languages, so there may be three his on some runs
+        ;; and two on others.
+        (is (.startsWith (sloop {:timeout 2000}) "hi\nhi\n"))))))
 
 (deftest background-test
   (testing "Process runs in a future"
@@ -66,3 +68,21 @@
       (is (= "we\nwear\nshort\nshorts" (cat {:in (java.io.File. "test/testfiles/inputdata")}))))
     (testing "Can input a reader"
       (is (= "we\nwear\nshort\nshorts" (cat {:in (java.io.FileReader. "test/testfiles/inputdata")}))))))
+
+(deftest exception-test
+  (sh/with-programs [ls]
+    (testing "Throws exceptions when *throw* is true."
+      (is sh/*throw*)
+      (is (thrown? ExceptionInfo (ls "-2")))
+      (is (string?
+           (try (ls "-2")
+                (catch ExceptionInfo e
+                  (:stderr (ex-data e))))))
+      (testing "But can override"
+        (is (= "" (ls "-2" {:throw false})))))
+    (testing "Can turn it off"
+      (binding [sh/*throw* false]
+        (is (not sh/*throw*))
+        (is (= "" (ls "-2")))
+        (testing "But can override"
+          (is (thrown? ExceptionInfo (ls "-2" {:throw true}))))))))
