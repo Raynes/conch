@@ -199,7 +199,7 @@ user> (grep "ssh" (ps "-e" {:seq true}))
 ### Buffering
 
 Conch gets rid of some ugly edge-cases by **always reading process output
-immediately when it becomes available**. It buffer this data into a queue that
+immediately when it becomes available**. It buffers this data into a queue that
 you consume however you want. This is how returning lazy seqs work. Keep in mind
 that if you don't consume data, it is being held in memory.
 
