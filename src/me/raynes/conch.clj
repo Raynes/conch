@@ -36,14 +36,8 @@
   Redirectable
   (redirect [f options k proc]
     (let [s (k proc)
-          is-binary (or (byte? (first s)) (byte-array? (first s)))]
-      (with-open [writer (cond
-                          ;; If we're receiving bytes, use a raw OutputStream
-                          is-binary (io/output-stream f)
-
-                          ;; Otherwise use a FileWriter
-                          :else (java.io.FileWriter. f))]
-
+          is-binary (:use-binary options)]
+      (with-open [writer (if is-binary (io/output-stream f) (java.io.FileWriter. f))]
         (write-to-writer writer s is-binary)))))
 
 (extend-type clojure.lang.IFn
@@ -55,9 +49,8 @@
 (extend-type java.io.Writer
   Redirectable
   (redirect [w options k proc]
-    (let [s (get proc k)
-          is-binary (or (byte? (first s)) (byte-array? (first s)))]
-    (write-to-writer w s is-binary))))
+    (let [s (get proc k)]
+      (write-to-writer w s (:use-binary options)))))
 
 (defn seqify? [options k]
   (let [seqify (:seq options)]
@@ -70,16 +63,9 @@
     (let [seqify (:seq options)
           s (k proc)]
       (cond
-       ;; If the user wants it as a sequence
        (seqify? options k) s
-
-       ;; If the seq contains bytes, convert to a byte array
        (byte? (first s)) (byte-array s)
-
-       ;; If it's a seq containing byte arrays, concatenate them
        (byte-array? (first s)) (byte-array (mapcat seq s))
-
-       ;; Just mash it together into a string
        :else (string/join s)))))
 
 (defprotocol Drinkable
@@ -142,14 +128,12 @@
   #(try
      (let [cbuf (make-array (if use-binary Byte/TYPE Character/TYPE) kind)
            size (.read reader cbuf)]
-       (when (not (neg? size))
+       (when-not (neg? size)
          (let [result (if (= size kind)
                         cbuf
                         (take size cbuf))]
            (if use-binary
-             ;; Make sure we return a byte array
              (if (seq? result) (byte-array result) result)
-             ;; Return a string
              (string/join result)))))
      (catch java.io.IOException _)))
 
@@ -161,7 +145,7 @@
 (defmethod buffer :none [_ reader use-binary]
   #(try
      (let [c (.read reader)]
-       (when (not (neg? c))
+       (when-not (neg? c)
          (if use-binary
            ;; Return a byte (convert from unsigned value)
            (ubyte c)
