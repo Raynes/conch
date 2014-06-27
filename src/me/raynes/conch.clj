@@ -38,7 +38,7 @@
   Redirectable
   (redirect [f options k proc]
     (let [s (k proc)
-          is-binary (:use-binary options)]
+          is-binary (:binary options)]
       (with-open [writer (if is-binary (io/output-stream f) (java.io.FileWriter. f))]
         (write-to-writer writer s is-binary)))))
 
@@ -52,7 +52,7 @@
   Redirectable
   (redirect [w options k proc]
     (let [s (get proc k)]
-      (write-to-writer w s (:use-binary options)))))
+      (write-to-writer w s (:binary options)))))
 
 (defn seqify? [options k]
   (let [seqify (:seq options)]
@@ -126,15 +126,15 @@
                      :number
                      kind)))
 
-(defmethod buffer :number [kind reader use-binary]
+(defmethod buffer :number [kind reader binary]
   #(try
-     (let [cbuf (make-array (if use-binary Byte/TYPE Character/TYPE) kind)
+     (let [cbuf (make-array (if binary Byte/TYPE Character/TYPE) kind)
            size (.read reader cbuf)]
        (when-not (neg? size)
          (let [result (if (= size kind)
                         cbuf
                         (take size cbuf))]
-           (if use-binary
+           (if binary
              (if (seq? result) (byte-array result) result)
              (string/join result)))))
      (catch java.io.IOException _)))
@@ -144,43 +144,43 @@
      (byte (- val 256))
      (byte val)))
 
-(defmethod buffer :none [_ reader use-binary]
+(defmethod buffer :none [_ reader binary]
   #(try
      (let [c (.read reader)]
        (when-not (neg? c)
-         (if use-binary
+         (if binary
            ;; Return a byte (convert from unsigned value)
            (ubyte c)
            ;; Return a char
            (char c))))
      (catch java.io.IOException _)))
 
-(defmethod buffer :line [_ reader use-binary]
+(defmethod buffer :line [_ reader binary]
   #(try
      (.readLine reader)
      (catch java.io.IOException _)))
 
-(defn queue-stream [stream buffer-type use-binary]
+(defn queue-stream [stream buffer-type binary]
   (let [queue (LinkedBlockingQueue.)
-        read-object (if use-binary stream (io/reader stream))]
+        read-object (if binary stream (io/reader stream))]
     (.start
      (Thread.
       (fn []
-        (doseq [x (take-while identity (repeatedly (buffer buffer-type read-object use-binary)))]
+        (doseq [x (take-while identity (repeatedly (buffer buffer-type read-object binary)))]
           (.put queue x))
         (.put queue :eof))))
     (queue-seq queue)))
 
-(defn queue-output [proc buffer-type use-binary]
+(defn queue-output [proc buffer-type binary]
   (assoc proc
-    :out (queue-stream (:out proc) buffer-type use-binary)
-    :err (queue-stream (:err proc) buffer-type use-binary)))
+    :out (queue-stream (:out proc) buffer-type binary)
+    :err (queue-stream (:err proc) buffer-type binary)))
 
 (defn compute-buffer [options]
   (update-in options [:buffer]
              #(if-let [buffer %]
                 buffer
-                (if (and (not (:use-binary options))
+                (if (and (not (:binary options))
                          (or (:seq options)
                              (:pipe options)
                              (ifn? (:out options))
@@ -196,8 +196,8 @@
 (defn run-command [name args options]
   (let [proc (apply conch/proc name (add-proc-args (map str args) options))
         options (compute-buffer options)
-        {:keys [buffer out in err timeout verbose use-binary]} options
-        proc (queue-output proc buffer use-binary)
+        {:keys [buffer out in err timeout verbose binary]} options
+        proc (queue-output proc buffer binary)
         exit-code (future (if timeout
                             (conch/exit-code proc timeout)
                             (conch/exit-code proc)))]
