@@ -25,12 +25,14 @@
 (def byte-array?
   (test-array byte-array))
 
+
 (defn write-to-writer [writer s is-binary]
-  (if is-binary
-    (cond
-     (byte? (first s)) (.write writer (byte-array s))
-     (or (not is-binary)
-         (byte-array? (first s))) (doseq [x s] (.write writer x)))))
+  (cond
+   (byte? (first s)) (.write writer (byte-array s))
+   (or (not is-binary)
+       (byte-array? (first s))) (if (char? (first s))
+                                  (.write writer (apply str s))
+                                  (doseq [x s] (.write writer x)))))
 
 (extend-type java.io.File
   Redirectable
