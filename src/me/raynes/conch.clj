@@ -32,6 +32,10 @@
     (doseq [x (get proc k)]
       (.write w x))))
 
+(defn is-byte? [x]
+  (and (not (nil? x))
+       (= java.lang.Byte (.getClass x))))
+
 (defn seqify? [options k]
   (let [seqify (:seq options)]
     (or (= seqify k)
@@ -42,9 +46,15 @@
   (redirect [_ options k proc]
     (let [seqify (:seq options)
           s (k proc)]
-      (if
+      (cond
+       ;; If the seq contains bytes, convert to a byte array
+       (is-byte? (first s)) (byte-array s)
+
+       ;; Otherwise, if the user wants it as a sequence
        (seqify? options k) s
-       (string/join s)))))
+
+       ;; Just mash it together into a string
+       :else (string/join s)))))
 
 (defprotocol Drinkable
   (drink [this proc]))
@@ -120,18 +130,24 @@
          (char c)))
      (catch java.io.IOException _)))
 
+(defmethod buffer :binary [_ stream]
+  #(try
+     (let [c (.read stream)]
+       (when (not (neg? c)) (byte (- c 128))))
+     (catch java.io.IOException _)))
+
 (defmethod buffer :line [_ reader]
   #(try
      (.readLine reader)
      (catch java.io.IOException _)))
 
 (defn queue-stream [stream buffer-type]
-  (let [reader (io/reader stream)
-        queue (LinkedBlockingQueue.)]
+  (let [queue (LinkedBlockingQueue.)
+        read-object (if (= buffer-type :binary) stream (io/reader stream))]
     (.start
      (Thread.
       (fn []
-        (doseq [x (take-while identity (repeatedly (buffer buffer-type reader)))]
+        (doseq [x (take-while identity (repeatedly (buffer buffer-type read-object)))]
           (.put queue x))
         (.put queue :eof))))
     (queue-seq queue)))
