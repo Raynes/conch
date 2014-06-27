@@ -13,12 +13,38 @@
 (defprotocol Redirectable
   (redirect [this options k proc]))
 
+(defn byte? [x]
+  (and (not (nil? x))
+       (= java.lang.Byte (.getClass x))))
+
+(defn test-array
+  [t]
+  (let [check (type (t []))]
+    (fn [arg] (instance? check arg))))
+
+(def byte-array?
+  (test-array byte-array))
+
+(defn write-to-writer [writer s is-binary]
+  (if is-binary
+    (cond
+     (byte? (first s)) (.write writer (byte-array s))
+     (or (not is-binary)
+         (byte-array? (first s))) (doseq [x s] (.write writer x)))))
+
 (extend-type java.io.File
   Redirectable
   (redirect [f options k proc]
-    (with-open [writer (java.io.FileWriter. f)]
-      (doseq [x (get proc k)]
-        (.write writer x)))))
+    (let [s (k proc)
+          is-binary (or (byte? (first s)) (byte-array? (first s)))]
+      (with-open [writer (cond
+                          ;; If we're receiving bytes, use a raw OutputStream
+                          is-binary (io/output-stream f)
+
+                          ;; Otherwise use a FileWriter
+                          :else (java.io.FileWriter. f))]
+
+        (write-to-writer writer s is-binary)))))
 
 (extend-type clojure.lang.IFn
   Redirectable
@@ -29,12 +55,9 @@
 (extend-type java.io.Writer
   Redirectable
   (redirect [w options k proc]
-    (doseq [x (get proc k)]
-      (.write w x))))
-
-(defn is-byte? [x]
-  (and (not (nil? x))
-       (= java.lang.Byte (.getClass x))))
+    (let [s (get proc k)
+          is-binary (or (byte? (first s)) (byte-array? (first s)))]
+    (write-to-writer w s is-binary))))
 
 (defn seqify? [options k]
   (let [seqify (:seq options)]
@@ -47,11 +70,14 @@
     (let [seqify (:seq options)
           s (k proc)]
       (cond
-       ;; If the seq contains bytes, convert to a byte array
-       (is-byte? (first s)) (byte-array s)
-
-       ;; Otherwise, if the user wants it as a sequence
+       ;; If the user wants it as a sequence
        (seqify? options k) s
+
+       ;; If the seq contains bytes, convert to a byte array
+       (byte? (first s)) (byte-array s)
+
+       ;; If it's a seq containing byte arrays, concatenate them
+       (byte-array? (first s)) (byte-array (mapcat seq s))
 
        ;; Just mash it together into a string
        :else (string/join s)))))
@@ -107,64 +133,72 @@
      (when-not (= x :eof)
        (cons x (queue-seq q))))))
 
-(defmulti buffer (fn [kind _]
+(defmulti buffer (fn [kind _ _]
                    (if (number? kind)
                      :number
                      kind)))
 
-(defmethod buffer :number [kind reader]
+(defmethod buffer :number [kind reader use-binary]
   #(try
-     (let [cbuf (make-array Character/TYPE kind)
+     (let [cbuf (make-array (if use-binary Byte/TYPE Character/TYPE) kind)
            size (.read reader cbuf)]
-       (when (pos? size)
-         (string/join
-          (if (= size kind)
-            cbuf
-            (take size cbuf)))))
+       (when (not (neg? size))
+         (let [result (if (= size kind)
+                        cbuf
+                        (take size cbuf))]
+           (if use-binary
+             ;; Make sure we return a byte array
+             (if (seq? result) (byte-array result) result)
+             ;; Return a string
+             (string/join result)))))
      (catch java.io.IOException _)))
 
-(defmethod buffer :none [_ reader]
+(defn ubyte [val]
+   (if (>= val 128)
+     (byte (- val 256))
+     (byte val)))
+
+(defmethod buffer :none [_ reader use-binary]
   #(try
      (let [c (.read reader)]
-       (when (pos? c)
-         (char c)))
+       (when (not (neg? c))
+         (if use-binary
+           ;; Return a byte (convert from unsigned value)
+           (ubyte c)
+           ;; Return a char
+           (char c))))
      (catch java.io.IOException _)))
 
-(defmethod buffer :binary [_ stream]
-  #(try
-     (let [c (.read stream)]
-       (when (not (neg? c)) (byte (- c 128))))
-     (catch java.io.IOException _)))
-
-(defmethod buffer :line [_ reader]
+(defmethod buffer :line [_ reader use-binary]
   #(try
      (.readLine reader)
      (catch java.io.IOException _)))
 
-(defn queue-stream [stream buffer-type]
+(defn queue-stream [stream buffer-type use-binary]
   (let [queue (LinkedBlockingQueue.)
-        read-object (if (= buffer-type :binary) stream (io/reader stream))]
+        read-object (if use-binary stream (io/reader stream))]
     (.start
      (Thread.
       (fn []
-        (doseq [x (take-while identity (repeatedly (buffer buffer-type read-object)))]
+        (doseq [x (take-while identity (repeatedly (buffer buffer-type read-object use-binary)))]
           (.put queue x))
         (.put queue :eof))))
     (queue-seq queue)))
 
-(defn queue-output [proc buffer-type]
+(defn queue-output [proc buffer-type use-binary]
   (assoc proc
-    :out (queue-stream (:out proc) buffer-type)
-    :err (queue-stream (:err proc) buffer-type)))
+    :out (queue-stream (:out proc) buffer-type use-binary)
+    :err (queue-stream (:err proc) buffer-type use-binary)))
 
 (defn compute-buffer [options]
   (update-in options [:buffer]
              #(if-let [buffer %]
                 buffer
-                (if (or (:seq options)
-                        (:pipe options)
-                        (ifn? (:out options))
-                        (ifn? (:err options)))
+                (if (and (not (:use-binary options))
+                         (or (:seq options)
+                             (:pipe options)
+                             (ifn? (:out options))
+                             (ifn? (:err options))))
                   :line
                   1024))))
 
@@ -175,9 +209,9 @@
 
 (defn run-command [name args options]
   (let [proc (apply conch/proc name (add-proc-args (map str args) options))
-        options (compute-buffer options) 
-        {:keys [buffer out in err timeout verbose]} options 
-        proc (queue-output proc buffer)
+        options (compute-buffer options)
+        {:keys [buffer out in err timeout verbose use-binary]} options
+        proc (queue-output proc buffer use-binary)
         exit-code (future (if timeout
                             (conch/exit-code proc timeout)
                             (conch/exit-code proc)))]
