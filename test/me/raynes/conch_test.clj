@@ -12,10 +12,10 @@
         (is (= ["hi" "there"] (echo "hi\nthere" {:seq true}))))
       (testing "Can redirect output to a file"
         (let [output "hi\nthere\n"
-              testfile "test/testfiles/foo"]
-          (echo "hi\nthere" {:out (java.io.File. testfile)})
+              testfile (java.io.File/createTempFile "test-output" ".txt")]
+          (echo "hi\nthere" {:out testfile})
           (is (= output (slurp testfile)))
-          (errecho "hi\nthere" {:err (java.io.File. testfile)})
+          (errecho "hi\nthere" {:err testfile})
           (is (= output (slurp testfile)))))
       (testing "Can redirect output to a callback function"
         (let [x (atom [])
@@ -28,6 +28,46 @@
         (let [writer (java.io.StringWriter.)]
           (echo "hi" {:out writer})
           (is (= (str writer) "hi\n")))))))
+
+(defn input-stream-to-byte-array [is]
+  "Convert an input stream is to byte array"
+  (with-open [baos (java.io.ByteArrayOutputStream.)]
+    (let [ba (byte-array 2000)]
+      (loop [n (.read is ba 0 2000)]
+        (when (> n 0)
+          (.write baos ba 0 n)
+          (recur (.read is ba 0 2000))))
+      (.toByteArray baos))))
+
+(defn file-to-bytearray [file]
+  "Convert a file to a byte array"
+  (let [is (clojure.java.io/input-stream file)]
+    (input-stream-to-byte-array is)))
+
+(deftest output-test-binary
+  (sh/let-programs [errecho "test/testfiles/errecho"]
+    (sh/with-programs [cat]
+      (let [binary-file-path (.getAbsolutePath (java.io.File. "test/testfiles/bytes_0_through_255"))
+            bytes-0-through-255 (byte-array (map sh/ubyte (range 256)))]
+        (testing "By default, output is accumulated as a single byte array"
+          (let [result (cat binary-file-path {:binary true})]
+            (is (sh/byte-array? result))
+            (is (= (seq bytes-0-through-255) (seq result)))))
+        (testing "Output can be a lazy sequence of byte arrays"
+          (let [result (cat binary-file-path {:binary true :seq true :buffer 10})]
+            (is (every? sh/byte-array? result))
+            (is (= (seq bytes-0-through-255) (mapcat seq result)))))
+        (testing "Can redirect output to a file"
+          (let [temp-file (java.io.File/createTempFile "binary-file" ".bin")]
+            (cat binary-file-path {:binary true :buffer 10 :out temp-file})
+            (let [result (file-to-bytearray temp-file)]
+              (is (sh/byte-array? result))
+              (is (= (seq bytes-0-through-255) (seq result))))))
+        (testing "Can redirect output to a callback function. A small buffer will result in a seq of byte arrays."
+          (let [result (atom [])]
+            (cat binary-file-path {:binary true :buffer 10 :out (fn [line _] (swap! result conj line))})
+            (is (every? sh/byte-array? @result))
+            (is (= (seq bytes-0-through-255) (seq (byte-array (mapcat seq @result)))))))))))
 
 (deftest timeout-test
   (binding [sh/*throw* false]
