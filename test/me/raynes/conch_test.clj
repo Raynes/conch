@@ -12,10 +12,10 @@
         (is (= ["hi" "there"] (echo "hi\nthere" {:seq true}))))
       (testing "Can redirect output to a file"
         (let [output "hi\nthere\n"
-              testfile "test/testfiles/foo"]
-          (echo "hi\nthere" {:out (java.io.File. testfile)})
+              testfile (java.io.File/createTempFile "test-output" ".txt")]
+          (echo "hi\nthere" {:out testfile})
           (is (= output (slurp testfile)))
-          (errecho "hi\nthere" {:err (java.io.File. testfile)})
+          (errecho "hi\nthere" {:err testfile})
           (is (= output (slurp testfile)))))
       (testing "Can redirect output to a callback function"
         (let [x (atom [])
