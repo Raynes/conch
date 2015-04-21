@@ -160,8 +160,10 @@
      (.readLine reader)
      (catch java.io.IOException _)))
 
-(defn queue-stream [stream buffer-type binary]
-  (let [queue (LinkedBlockingQueue.)
+(defn queue-stream [queue-size stream buffer-type binary]
+  (let [queue (if queue-size
+                (LinkedBlockingQueue. queue-size)
+                (LinkedBlockingQueue.))
         read-object (if binary stream (io/reader stream))]
     (.start
      (Thread.
@@ -171,10 +173,10 @@
         (.put queue :eof))))
     (queue-seq queue)))
 
-(defn queue-output [proc buffer-type binary]
+(defn queue-output [queue-size proc buffer-type binary]
   (assoc proc
-    :out (queue-stream (:out proc) buffer-type binary)
-    :err (queue-stream (:err proc) buffer-type binary)))
+    :out (queue-stream queue-size (:out proc) buffer-type binary)
+    :err (queue-stream queue-size (:err proc) buffer-type binary)))
 
 (defn compute-buffer [options]
   (update-in options [:buffer]
@@ -196,8 +198,8 @@
 (defn run-command [name args options]
   (let [proc (apply conch/proc name (add-proc-args (map str args) options))
         options (compute-buffer options)
-        {:keys [buffer out in err timeout verbose binary]} options
-        proc (queue-output proc buffer binary)
+        {:keys [queue-size buffer out in err timeout verbose binary]} options
+        proc (queue-output queue-size proc buffer binary)
         exit-code (future (if timeout
                             (conch/exit-code proc timeout)
                             (conch/exit-code proc)))]

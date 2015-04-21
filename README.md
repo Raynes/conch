@@ -48,7 +48,7 @@ user> (with-programs [ls] (ls))
 "#README.md#\nREADME.md\nclasses\ndocs\nfoo.py\nlib\nlol\npom.xml\npom.xml.asc\nproject.clj\nsrc\ntarget\ntest\ntestfile\n"
 user> ls
 CompilerException java.lang.RuntimeException: Unable to resolve symbol: ls in
-this context, compiling:(NO_SOURCE_PATH:1) 
+this context, compiling:(NO_SOURCE_PATH:1)
 ```
 
 `let-programs` is similar, but is useful for when you want to specify a path to
@@ -220,6 +220,14 @@ user> (ls {:seq true :buffer :none})
 Another nice thing gained by the way conch consumes data is that it is able to
 kill a process after a timeout and keep whatever data it has already consumed.
 
+You can explicitly tell conch to not read the process output immediately be providing the `:queue-size` parameter.
+This will only read output from the process if queue space is available.
+
+```clojure
+user> (ls {:buffer 10 :queue-size 2 :seq true})
+("pom.xml\npr" "oject.clj\n" "README.md\n" "src\ntarget" "\ntest\n")
+```
+
 
 ### PTY stuff
 
@@ -371,7 +379,7 @@ nil
 ```
 
 You can also pass a `java.io.File` or anything that can be passed to
-`clojure.java.io/file`. 
+`clojure.java.io/file`.
 
 We can also set environment variables:
 
