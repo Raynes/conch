@@ -14,7 +14,7 @@
   printed. If passed the :clear-env keyword option, then the process
   will not inherit its environment from its parent process."
   [& args]
-  (let [[cmd args] (split-with (complement keyword?) args)
+  (let [[cmd args] (split-with (complement keyword?) (flatten args))
         args (apply hash-map args)
         builder (ProcessBuilder. (into-array String cmd))
         env (.environment builder)]
@@ -72,8 +72,8 @@
 
 (defn stream-to
   "Stream :out or :err from a process to an ouput stream.
-  Options passed are fed to clojure.java.io/copy. They are :encoding to 
-  set the encoding and :buffer-size to set the size of the buffer. 
+  Options passed are fed to clojure.java.io/copy. They are :encoding to
+  set the encoding and :buffer-size to set the size of the buffer.
   :encoding defaults to UTF-8 and :buffer-size to 1024."
   [process from to & args]
   (apply io/copy (process from) to args))

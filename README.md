@@ -408,6 +408,18 @@ When we call `done`, it closes the process's output stream which is
 like sending EOF. The process processes its input and then puts it on
 its input stream where we read it with `stream-to-string`.
 
+### Passing variable arguments and options
+
+If you want to pass pass a variable list of arguments and/or options to a `proc` you can do it like this:
+
+```clojure
+user=> (sh/stream-to-string (sh/proc "echo" ["fee" "fie" "foe" "fum" :verbose :very]) :out)
+echo fee fie foe fum
+"fee fie foe fum\n"
+```
+
+Any vectors of arguments and/or options are flattened with other parameters (including the first parameter, the actual command itself). For example this would work just as well: `["echo" "fee" "fie" ["foe" "fum"] [:verbose :very]]`.
+
 ### Other options
 
 All of conch's streaming and feeding functions (including the lower

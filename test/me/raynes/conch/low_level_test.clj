@@ -30,8 +30,20 @@
   (testing "output is put in a string and returned"
     (is (= "foo\n" (c/stream-to-string (c/proc "echo" "foo") :out)))))
 
+(deftest variable-parameters-test
+  (testing "zero parameters can be consumed."
+    (is (= "\n" (c/stream-to-string (c/proc "echo") :out))))
+  (testing "empty parameters can be consumed."
+      (is (= "\n" (c/stream-to-string (c/proc "echo" []) :out))))
+  (testing "single parameter can be consumed."
+      (is (= "fee\n" (c/stream-to-string (c/proc "echo" ["fee"]) :out))))
+  (testing "variable number of parameters can be consumed."
+    (is (= "fee fie foe fum\n" (c/stream-to-string (c/proc "echo" ["fee" "fie" "foe" "fum"]) :out))))
+  (testing "variable number of parameters can be consumed with any nesting."
+    (is (= "fee fie foe fum\n" (c/stream-to-string (c/proc ["echo" ["fee" ["fie" ["foe"]] "fum"]]) :out)))))
+
 (deftest exit-code-test
-  (testing "exit-code blocls until a process exists and returns an exit code."
+  (testing "exit-code blocks until a process exists and returns an exit code."
     (is (= 0 (c/exit-code (c/proc "pwd"))))))
 
 (deftest read-line-test
