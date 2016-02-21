@@ -410,7 +410,7 @@ its input stream where we read it with `stream-to-string`.
 
 ### Passing variable arguments and options
 
-If you want to pass pass a variable list of arguments and/or options to a `proc` you can do it like this:
+If you want to pass a variable list of arguments and/or options to a `proc` you can do it like this:
 
 ```clojure
 user=> (sh/stream-to-string (sh/proc "echo" ["fee" "fie" "foe" "fum" :verbose :very]) :out)
