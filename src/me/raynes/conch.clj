@@ -1,8 +1,7 @@
 (ns me.raynes.conch
   (:require [me.raynes.conch.low-level :as conch]
             [clojure.java.io :as io]
-            [clojure.string :as string]
-            [flatland.useful.seq :as seq])
+            [clojure.string :as string])
   (:import java.util.concurrent.LinkedBlockingQueue))
 
 (def ^:dynamic *throw*
@@ -254,11 +253,21 @@
 (defn- program-form [prog]
   `(fn [& args#] (apply execute ~prog args#)))
 
+(defn map-nth
+  "Calls f on every nth element of coll. If start is passed, starts
+   at that element (counting from zero), otherwise starts with zero."
+  ([f nth coll] (map-nth f 0 nth coll))
+  ([f start nth coll]
+   (map #(% %2)
+        (concat (repeat start identity)
+                (cycle (cons f (repeat (dec nth) identity))))
+        coll)))
+
 (defmacro let-programs
   "Like let, but expects bindings to be symbols to strings of paths to
    programs."
   [bindings & body]
-  `(let [~@(seq/map-nth #(program-form %) 1 2 bindings)]
+  `(let [~@(map-nth #(program-form %) 1 2 bindings)]
      ~@body))
 
 (defmacro with-programs

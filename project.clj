@@ -1,10 +1,9 @@
-(defproject me.raynes/conch "0.8.0"
+(defproject me.raynes/conch "0.9.0"
   :license {:name "Eclipse Public License - v 1.0"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :url "https://github.com/Raynes/conch"
   :description "A better shell-out library for Clojure."
-  :dependencies [[org.clojure/clojure "1.6.0"]
-                 [org.flatland/useful "0.10.6"]]
+  :dependencies [[org.clojure/clojure "1.6.0"]]
   :aliases {"testall" ["with-profile" "dev,default:dev,1.5,default:dev,1.4,default" "test"]}
   :profiles {:1.5 {:dependencies [[org.clojure/clojure "1.5.0"]]}
              :1.4 {:dependencies [[org.clojure/clojure "1.4.0"]]}
