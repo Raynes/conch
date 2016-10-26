@@ -256,7 +256,7 @@ user=> p
 ```
 
 When you create a process with `proc`, you get back a map containing the
-keys `:out`, `:err`, `:in`, and `:proc`.
+keys `:out`, `:err`, `:in`, and `:process`.
 
 * `:out` is the process's stdout.
 * `:err` is the process's stderr.
