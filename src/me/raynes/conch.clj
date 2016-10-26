@@ -111,6 +111,7 @@
            (select-keys options
                         [:redirect-err
                          :env
+                         :clear-env
                          :dir]))
     args))
 

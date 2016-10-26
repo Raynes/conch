@@ -126,3 +126,10 @@
         (is (= "" (ls "-2")))
         (testing "But can override"
           (is (thrown? ExceptionInfo (ls "-2" {:throw true}))))))))
+         
+
+(deftest env-test
+  (sh/with-programs [env]
+    (testing "Environment is cleared if a program is called with :clear-env"
+      (is (= "" (env {:throw true :clear-env true})))
+      (is (not= "" (env {:throw true}))))))
