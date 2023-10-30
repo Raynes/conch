@@ -5,7 +5,7 @@
 Conch is actually two libraries. The first, `me.raynes.conch.low-level` is a simple low-level
 interface to the Java process APIs. The second and more interesting library is
 an interface to low-level inspired by the Python
-[sh](http://amoffat.github.com/sh/) library.
+[sh](https://github.com/amoffat/sh) library.
 
 The general idea is to be able to call programs just like you would call Clojure
 functions. See Usage for examples.
